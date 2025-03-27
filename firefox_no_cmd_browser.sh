@@ -21,28 +21,27 @@ while [ -e "/tmp/.X${DISPLAY_NUM}-lock" ]; do
 done
 
 # === INSTALLATION DES DÉPENDANCES ===
-echo "[1/7] Installation des outils..."
-apt update && apt install -y firefox x11vnc xvfb fluxbox curl unzip jq wget python3 python3-pip
+echo "[1/8] Installation des outils..."
+apt update && apt install -y firefox x11vnc xvfb fluxbox curl unzip jq wget python3 python3-pip setxkbmap
 pip3 install --break-system-packages selenium webdriver-manager fake-useragent
 
 # === TÉLÉCHARGEMENT FOXYPROXY ===
-echo "[2/7] Téléchargement de FoxyProxy"
+echo "[2/8] Téléchargement de FoxyProxy"
 curl -sL "$EXT_URL" -o "$EXT_FILE"
 
 # === CRÉATION DU PROFIL FIREFOX ===
-echo "[3/7] Préparation du profil Firefox : $PROFILE_NAME"
+echo "[3/8] Préparation du profil Firefox : $PROFILE_NAME"
 mkdir -p "$PROFILE_DIR/extensions"
 unzip -q "$EXT_FILE" -d /tmp/foxyproxy_extract
 FOXY_ID=$(jq -r '.applications.gecko.id' /tmp/foxyproxy_extract/manifest.json)
 mv "$EXT_FILE" "$PROFILE_DIR/extensions/$FOXY_ID.xpi"
 rm -rf /tmp/foxyproxy_extract
 
-# === CRÉATION DU SCRIPT PYTHON SELENIUM ===
-echo "[4/7] Génération du script Selenium"
+# === GÉNÉRATION DU SCRIPT SELENIUM ===
+echo "[4/8] Génération du script Python Selenium"
 cat > /root/stealth_agent.py <<EOF
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.by import By
 from fake_useragent import UserAgent
 import time
 
@@ -81,25 +80,31 @@ driver.quit()
 EOF
 
 # === LANCEMENT D'UN ENVIRONNEMENT GRAPHIQUE ===
-echo "[5/7] Lancement de Xvfb et Fluxbox"
+echo "[5/8] Lancement de Xvfb et Fluxbox"
 killall -q Xvfb fluxbox firefox x11vnc || true
 Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 &
 sleep 2
+setxkbmap ch mac -display :$DISPLAY_NUM
 DISPLAY=:$DISPLAY_NUM fluxbox &
 sleep 2
 
+# === RACCOURCI BUREAU POUR FIREFOX ===
+echo "[6/8] Ajout icône Firefox au menu"
+echo -e '[exec] (Firefox) {firefox --no-remote --profile '"$PROFILE_DIR"'}' >> ~/.fluxbox/menu
+
 # === LANCEMENT DU SERVEUR VNC ===
-echo "[6/7] Lancement de x11vnc"
+echo "[7/8] Lancement de x11vnc"
 DISPLAY=:$DISPLAY_NUM x11vnc -nopw -forever -shared -rfbport 5900 -bg
 
 # === LANCEMENT DE noVNC ===
-echo "[7/7] Lancement de noVNC sur :6080"
+echo "[8/8] Lancement de noVNC sur :6080"
 git clone https://github.com/novnc/noVNC.git /opt/novnc &>/dev/null || true
 /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 &>/dev/null &
 
 # === AFFICHAGE FINAL ===
-echo "\n[OK] Environnement opérationnel. Accède via navigateur :"
+echo "\n[OK] Environnement prêt :"
 echo "   http://\$(curl -s ipinfo.io/ip):6080/vnc.html"
-echo "\nPuis lance :"
+echo "\nPuis, lance dans le terminal :"
 echo "   DISPLAY=:$DISPLAY_NUM python3 /root/stealth_agent.py"
+
 
