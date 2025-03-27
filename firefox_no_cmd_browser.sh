@@ -61,11 +61,9 @@ options.set_preference("network.proxy.share_proxy_settings", True)
 
 options.set_preference("browser.startup.homepage", "https://www.whatismybrowser.com/")
 options.set_preference("startup.homepage_welcome_url.additional", "https://browserleaks.com/ip")
-
 options.set_preference("app.normandy.first_run", False)
 options.set_preference("toolkit.telemetry.reportingpolicy.firstRun", False)
 options.set_preference("browser.shell.checkDefaultBrowser", False)
-
 options.set_preference("dom.webdriver.enabled", False)
 options.set_preference("useAutomationExtension", False)
 
