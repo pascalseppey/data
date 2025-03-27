@@ -14,10 +14,16 @@ EXT_ID="foxyproxy@eric.h.jung"
 EXT_URL="https://addons.mozilla.org/firefox/downloads/file/4425860/foxyproxy_standard-8.10.xpi"
 EXT_FILE="/tmp/foxyproxy.xpi"
 
+# === TROUVER UN DISPLAY DISPONIBLE ===
+DISPLAY_NUM=1
+while [ -e "/tmp/.X${DISPLAY_NUM}-lock" ]; do
+  DISPLAY_NUM=$((DISPLAY_NUM + 1))
+done
+
 # === INSTALLATION DES DÉPENDANCES ===
 echo "[1/7] Installation des outils..."
 apt update && apt install -y firefox x11vnc xvfb fluxbox curl unzip jq wget python3 python3-pip
-pip3 install selenium webdriver-manager fake-useragent
+pip3 install --break-system-packages selenium webdriver-manager fake-useragent
 
 # === TÉLÉCHARGEMENT FOXYPROXY ===
 echo "[2/7] Téléchargement de FoxyProxy"
@@ -60,7 +66,6 @@ profile_path = "$PROFILE_DIR"
 driver = webdriver.Firefox(options=options, firefox_profile=webdriver.FirefoxProfile(profile_path))
 driver.set_window_size(1280, 720)
 
-# Lancement de sites pour vérification
 sites = [
     "https://www.whatismybrowser.com/",
     "https://browserleaks.com/ip",
@@ -78,25 +83,23 @@ EOF
 # === LANCEMENT D'UN ENVIRONNEMENT GRAPHIQUE ===
 echo "[5/7] Lancement de Xvfb et Fluxbox"
 killall -q Xvfb fluxbox firefox x11vnc || true
-Xvfb :1 -screen 0 1280x720x24 &
+Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 &
 sleep 2
-DISPLAY=:1 fluxbox &
+DISPLAY=:$DISPLAY_NUM fluxbox &
 sleep 2
 
 # === LANCEMENT DU SERVEUR VNC ===
 echo "[6/7] Lancement de x11vnc"
-DISPLAY=:1 x11vnc -nopw -forever -shared -rfbport 5900 -bg
+DISPLAY=:$DISPLAY_NUM x11vnc -nopw -forever -shared -rfbport 5900 -bg
 
 # === LANCEMENT DE noVNC ===
 echo "[7/7] Lancement de noVNC sur :6080"
-cd ~
 git clone https://github.com/novnc/noVNC.git /opt/novnc &>/dev/null || true
 /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 &>/dev/null &
 
-# === LANCEMENT DE FIREFOX EN MODE STEALTH ===
-echo "
-[OK] Environnement opérationnel. Accède via navigateur :"
-echo "   http://$(curl -s ipinfo.io/ip):6080/vnc.html"
-echo "
-Puis lance :"
-echo "   DISPLAY=:1 python3 /root/stealth_agent.py"
+# === AFFICHAGE FINAL ===
+echo "\n[OK] Environnement opérationnel. Accède via navigateur :"
+echo "   http://\$(curl -s ipinfo.io/ip):6080/vnc.html"
+echo "\nPuis lance :"
+echo "   DISPLAY=:$DISPLAY_NUM python3 /root/stealth_agent.py"
+
