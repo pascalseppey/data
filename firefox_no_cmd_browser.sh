@@ -27,9 +27,27 @@ pip3 install --break-system-packages selenium webdriver-manager fake-useragent
 echo "[2/8] Téléchargement de FoxyProxy"
 curl -sL "$EXT_URL" -o "$EXT_FILE"
 
-# === CRÉATION D'UN PROFIL FIREFOX OFFICIEL ===
+# === CRÉATION DU PROFIL FIREFOX FIABLE ===
 echo "[3/8] Création du profil Firefox : $PROFILE_NAME"
-PROFILE_DIR=$(firefox --no-remote --CreateProfile "$PROFILE_NAME" | grep -o '/.*')
+PROFILE_DIR="$HOME/.mozilla/firefox/${PROFILE_NAME}.default-release"
+mkdir -p "$PROFILE_DIR"
+
+if ! grep -q "$PROFILE_NAME" "$HOME/.mozilla/firefox/profiles.ini" 2>/dev/null; then
+  mkdir -p "$HOME/.mozilla/firefox"
+  cat >> "$HOME/.mozilla/firefox/profiles.ini" <<EOF
+
+[Profile0]
+Name=$PROFILE_NAME
+IsRelative=1
+Path=${PROFILE_NAME}.default-release
+Default=1
+EOF
+fi
+
+# Lancer une fois Firefox en headless pour créer le profil
+DISPLAY=:$DISPLAY_NUM firefox --no-remote --profile "$PROFILE_DIR" --headless &
+sleep 4
+
 mkdir -p "$PROFILE_DIR/extensions"
 unzip -q "$EXT_FILE" -d /tmp/foxyproxy_extract
 FOXY_ID=$(jq -r '.applications.gecko.id' /tmp/foxyproxy_extract/manifest.json)
@@ -44,46 +62,28 @@ from selenium.webdriver.firefox.options import Options
 from fake_useragent import UserAgent
 import time
 
+options = Options()
 ua = UserAgent()
 user_agent = ua.random
-
-options = Options()
 options.set_preference("general.useragent.override", user_agent)
 options.set_preference("network.proxy.type", 1)
-options.set_preference("network.proxy.http", "$PROXY_HOST")
-options.set_preference("network.proxy.http_port", int("$PROXY_PORT"))
-options.set_preference("network.proxy.ssl", "$PROXY_HOST")
-options.set_preference("network.proxy.ssl_port", int("$PROXY_PORT"))
+options.set_preference("network.proxy.http", "geo.iproyal.com")
+options.set_preference("network.proxy.http_port", 12321)
+options.set_preference("network.proxy.ssl", "geo.iproyal.com")
+options.set_preference("network.proxy.ssl_port", 12321)
 options.set_preference("network.proxy.socks_remote_dns", True)
 options.set_preference("signon.autologin.proxy", True)
-options.set_preference("network.proxy.share_proxy_settings", True)
-
-options.set_preference("browser.startup.homepage", "https://www.whatismybrowser.com/")
-options.set_preference("startup.homepage_welcome_url.additional", "https://browserleaks.com/ip")
-
-options.set_preference("app.normandy.first_run", False)
-options.set_preference("toolkit.telemetry.reportingpolicy.firstRun", False)
-options.set_preference("browser.shell.checkDefaultBrowser", False)
-
 options.set_preference("dom.webdriver.enabled", False)
 options.set_preference("useAutomationExtension", False)
+options.set_preference("media.peerconnection.enabled", False)
+options.set_preference("privacy.resistFingerprinting", True)
+options.set_preference("browser.shell.checkDefaultBrowser", False)
 
-print("[INFO] Lancement de Firefox avec proxy et user-agent personnalisé...")
+print("[INFO] Lancement de Firefox stealth...")
 driver = webdriver.Firefox(options=options)
 driver.set_window_size(1280, 720)
-
-sites = [
-    "https://www.whatismybrowser.com/",
-    "https://browserleaks.com/ip",
-    "https://whoer.net"
-]
-
-for site in sites:
-    print(f"[INFO] Ouverture : {site}")
-    driver.get(site)
-    time.sleep(10)
-
-input("\n[OK] Contrôle manuel ouvert. Appuie sur [Entrée] pour quitter...\n")
+driver.get("https://whatismybrowser.com/")
+time.sleep(10)
 driver.quit()
 EOF
 
