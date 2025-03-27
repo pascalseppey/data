@@ -58,11 +58,19 @@ options.set_preference("network.proxy.ssl_port", int("$PROXY_PORT"))
 options.set_preference("network.proxy.socks_remote_dns", True)
 options.set_preference("signon.autologin.proxy", True)
 options.set_preference("network.proxy.share_proxy_settings", True)
-options.set_preference("network.proxy.username", "$PROXY_USER")
-options.set_preference("network.proxy.password", "$PROXY_PASS")
 
-profile_path = "$PROFILE_DIR"
-driver = webdriver.Firefox(options=options, firefox_profile=webdriver.FirefoxProfile(profile_path))
+options.set_preference("browser.startup.homepage", "https://www.whatismybrowser.com/")
+options.set_preference("startup.homepage_welcome_url.additional", "https://browserleaks.com/ip")
+
+options.set_preference("app.normandy.first_run", False)
+options.set_preference("toolkit.telemetry.reportingpolicy.firstRun", False)
+options.set_preference("browser.shell.checkDefaultBrowser", False)
+
+options.set_preference("dom.webdriver.enabled", False)
+options.set_preference("useAutomationExtension", False)
+
+print("[INFO] Lancement de Firefox avec proxy et user-agent personnalisé...")
+driver = webdriver.Firefox(options=options)
 driver.set_window_size(1280, 720)
 
 sites = [
@@ -72,10 +80,11 @@ sites = [
 ]
 
 for site in sites:
+    print(f"[INFO] Ouverture : {site}")
     driver.get(site)
     time.sleep(10)
 
-input("\n[OK] Navigation manuelle possible. Fermez la fenêtre pour quitter.\n")
+input("\n[OK] Contrôle manuel ouvert. Appuie sur [Entrée] pour quitter...\n")
 driver.quit()
 EOF
 
@@ -102,7 +111,7 @@ git clone https://github.com/novnc/noVNC.git /opt/novnc &>/dev/null || true
 /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 &>/dev/null &
 
 # === AFFICHAGE FINAL ===
-echo "\n[OK] Environnement prêt :"
+echo "\n[OK] Environnement opérationnel. Connecte-toi via :"
 echo "   http://\$(curl -s ipinfo.io/ip):6080/vnc.html"
-echo "\nPuis, lance dans le terminal :"
+echo "\nPuis, dans le terminal, lance :"
 echo "   DISPLAY=:$DISPLAY_NUM python3 /root/stealth_agent.py"
