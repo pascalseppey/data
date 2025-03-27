@@ -106,5 +106,3 @@ echo "\n[OK] Environnement prêt :"
 echo "   http://\$(curl -s ipinfo.io/ip):6080/vnc.html"
 echo "\nPuis, lance dans le terminal :"
 echo "   DISPLAY=:$DISPLAY_NUM python3 /root/stealth_agent.py"
-
-
