@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "🔧 Nettoyage des processus liés à noVNC..."
+killall -q Xvfb fluxbox x11vnc google-chrome firefox novnc_proxy xterm || true
+rm -f /tmp/.X1-lock
+sleep 2
+echo "✅ Terminé. Tu peux relancer le script principal."
